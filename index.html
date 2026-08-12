@@ -1,0 +1,700 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Women vs Honda Bike: City Sprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            background-color: #0f172a;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+        }
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.1s ease;
+        }
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 text-white">
+
+    <!-- Game Header -->
+    <div class="w-full max-w-2xl flex justify-between items-center mb-2 px-3">
+        <h1 class="text-xl md:text-2xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-400 to-indigo-400">
+            WOMEN vs HONDA BIKE
+        </h1>
+        <div id="statsBar" class="hidden flex gap-4 text-sm md:text-base font-bold">
+            <div class="bg-gray-800/80 px-3 py-1 rounded-full border border-pink-500/30">
+                ⚡ <span id="scoreText">0</span>m
+            </div>
+            <div class="bg-gray-800/80 px-3 py-1 rounded-full border border-yellow-500/30">
+                🪙 <span id="coinText">0</span>
+            </div>
+            <div class="bg-gray-800/80 px-3 py-1 rounded-full border border-red-500/30">
+                ❤️ <span id="livesText">3</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div class="relative w-full max-w-2xl flex justify-center items-center">
+        <canvas id="gameCanvas" class="w-full max-w-2xl bg-slate-900 border border-slate-700/50"></canvas>
+
+        <!-- Overlay Menu System -->
+        <div id="gameOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-xl flex flex-col items-center justify-center p-6 text-center z-10">
+            
+            <!-- Character Selection / Title Screen -->
+            <div id="menuScreen" class="w-full max-w-md flex flex-col items-center gap-4">
+                <div class="text-3xl font-black tracking-wider text-pink-500 mb-1">CITY DASH</div>
+                <p class="text-xs md:text-sm text-gray-300 -mt-3">Dash through city streets, jump over Honda bikes & collect power-ups!</p>
+
+                <div class="w-full mt-2">
+                    <label class="text-xs uppercase tracking-wider text-pink-400 font-bold block mb-2">Choose Character</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="selectCharacter('runner')" id="char-runner" class="p-3 bg-pink-900/40 border-2 border-pink-500 rounded-xl flex flex-col items-center gap-1 transition-all">
+                            <span class="text-3xl">🏃‍♀️</span>
+                            <span class="text-xs font-bold">Athlete</span>
+                            <span class="text-[10px] text-pink-300">+Extra Speed</span>
+                        </button>
+                        <button onclick="selectCharacter('commuter')" id="char-commuter" class="p-3 bg-gray-800/40 border border-gray-600 rounded-xl flex flex-col items-center gap-1 transition-all">
+                            <span class="text-3xl">👩‍💼</span>
+                            <span class="text-xs font-bold">Commuter</span>
+                            <span class="text-[10px] text-gray-400">2x Coins</span>
+                        </button>
+                        <button onclick="selectCharacter('biker')" id="char-biker" class="p-3 bg-gray-800/40 border border-gray-600 rounded-xl flex flex-col items-center gap-1 transition-all">
+                            <span class="text-3xl">🏍️</span>
+                            <span class="text-xs font-bold">Racer</span>
+                            <span class="text-[10px] text-purple-300">Extra Life</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="w-full mt-2 bg-gray-900/60 p-3 rounded-lg border border-gray-800 text-left text-xs text-gray-300 space-y-1">
+                    <div class="font-bold text-gray-200">How to play:</div>
+                    <div class="flex justify-between"><span>← Left / Right → or Swipe</span> <span class="text-pink-400 font-semibold">Change Lane</span></div>
+                    <div class="flex justify-between"><span>↑ Up Arrow or Swipe Up</span> <span class="text-pink-400 font-semibold">Jump</span></div>
+                    <div class="flex justify-between"><span>↓ Down Arrow or Swipe Down</span> <span class="text-pink-400 font-semibold">Slide</span></div>
+                </div>
+
+                <button onclick="startGame()" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-extrabold rounded-xl shadow-lg shadow-pink-500/30 hover:brightness-110 active:scale-95 transition-all text-base tracking-wide mt-2">
+                    START RACE
+                </button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="hidden w-full max-w-md flex flex-col items-center gap-4">
+                <h2 class="text-3xl font-black text-red-500 tracking-wider">CRASH!</h2>
+                <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800 w-full space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Distance Covered:</span>
+                        <span id="finalScore" class="font-bold text-pink-400">0m</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Coins Collected:</span>
+                        <span id="finalCoins" class="font-bold text-yellow-400">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-gray-800 pt-2">
+                        <span class="text-gray-400">Best Score:</span>
+                        <span id="bestScore" class="font-bold text-white">0m</span>
+                    </div>
+                </div>
+                <button onclick="startGame()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition-all">
+                    TRY AGAIN
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="mobileControls" class="w-full max-w-2xl mt-3 grid grid-cols-4 gap-2 px-2 h-16 sm:hidden">
+        <button class="touch-btn" id="btnLeft">◀ Left</button>
+        <button class="touch-btn" id="btnJump">▲ Jump</button>
+        <button class="touch-btn" id="btnSlide">▼ Slide</button>
+        <button class="touch-btn" id="btnRight">Right ▶</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive Canvas Sizing
+        function resizeCanvas() {
+            const containerWidth = Math.min(window.innerWidth - 16, 672);
+            canvas.width = containerWidth;
+            canvas.height = Math.min(window.innerHeight * 0.65, 520);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game Configuration & State
+        let gameActive = false;
+        let score = 0;
+        let coins = 0;
+        let lives = 3;
+        let bestScore = 0;
+        let selectedChar = 'runner';
+        let speed = 6;
+        let frameCount = 0;
+
+        // Lanes (3 lanes)
+        const getLaneX = (lane) => {
+            const laneWidth = canvas.width / 3;
+            return laneWidth * lane + laneWidth / 2;
+        };
+
+        // Player object
+        let player = {
+            lane: 1, // 0: Left, 1: Center, 2: Right
+            x: 0,
+            y: 0,
+            targetX: 0,
+            width: 38,
+            height: 60,
+            yOffset: 0,
+            isJumping: false,
+            isSliding: false,
+            jumpV: 0,
+            gravity: 0.8,
+            slideTimer: 0,
+            shield: false
+        };
+
+        // Obstacles (Honda Bikes, Scooters, Superbikes) and Items
+        let obstacles = [];
+        let collectibles = [];
+        let particles = [];
+
+        function selectCharacter(type) {
+            selectedChar = type;
+            document.querySelectorAll('#menuScreen button[id^="char-"]').forEach(btn => {
+                btn.className = "p-3 bg-gray-800/40 border border-gray-600 rounded-xl flex flex-col items-center gap-1 transition-all";
+            });
+            document.getElementById(`char-${type}`).className = "p-3 bg-pink-900/40 border-2 border-pink-500 rounded-xl flex flex-col items-center gap-1 transition-all";
+        }
+
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            coins = 0;
+            speed = selectedChar === 'runner' ? 7.5 : 6;
+            lives = selectedChar === 'biker' ? 4 : 3;
+
+            player.lane = 1;
+            player.x = getLaneX(1);
+            player.targetX = player.x;
+            player.y = canvas.height - 80;
+            player.yOffset = 0;
+            player.isJumping = false;
+            player.isSliding = false;
+            player.shield = false;
+
+            obstacles = [];
+            collectibles = [];
+            particles = [];
+
+            document.getElementById('gameOverlay').classList.add('hidden');
+            document.getElementById('statsBar').classList.remove('hidden');
+            updateUI();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            if (score > bestScore) bestScore = Math.floor(score);
+
+            document.getElementById('finalScore').innerText = `${Math.floor(score)}m`;
+            document.getElementById('finalCoins').innerText = coins;
+            document.getElementById('bestScore').innerText = `${bestScore}m`;
+
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('gameOverlay').classList.remove('hidden');
+        }
+
+        function updateUI() {
+            document.getElementById('scoreText').innerText = Math.floor(score);
+            document.getElementById('coinText').innerText = coins;
+            document.getElementById('livesText').innerText = lives;
+        }
+
+        // Input Handling
+        function moveLeft() {
+            if (player.lane > 0) {
+                player.lane--;
+                player.targetX = getLaneX(player.lane);
+            }
+        }
+
+        function moveRight() {
+            if (player.lane < 2) {
+                player.lane++;
+                player.targetX = getLaneX(player.lane);
+            }
+        }
+
+        function jump() {
+            if (!player.isJumping && !player.isSliding) {
+                player.isJumping = true;
+                player.jumpV = -13;
+            }
+        }
+
+        function slide() {
+            if (!player.isJumping && !player.isSliding) {
+                player.isSliding = true;
+                player.slideTimer = 25;
+            }
+        }
+
+        // Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeft();
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRight();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') jump();
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') slide();
+        });
+
+        // Touch Control Buttons
+        document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft(); });
+        document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); moveRight(); });
+        document.getElementById('btnJump').addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+        document.getElementById('btnSlide').addEventListener('touchstart', (e) => { e.preventDefault(); slide(); });
+
+        document.getElementById('btnLeft').addEventListener('click', moveLeft);
+        document.getElementById('btnRight').addEventListener('click', moveRight);
+        document.getElementById('btnJump').addEventListener('click', jump);
+        document.getElementById('btnSlide').addEventListener('click', slide);
+
+        // Touch Swipe Gestures on Canvas
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameActive) return;
+            let diffX = e.changedTouches[0].clientX - touchStartX;
+            let diffY = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > 30) {
+                    if (diffX > 0) moveRight();
+                    else moveLeft();
+                }
+            } else {
+                if (Math.abs(diffY) > 30) {
+                    if (diffY < 0) jump();
+                    else slide();
+                }
+            }
+        }, { passive: true });
+
+        // Spawning Entities
+        function spawnEntities() {
+            if (frameCount % Math.max(35, Math.floor(70 - speed * 2)) === 0) {
+                const lane = Math.floor(Math.random() * 3);
+                const types = ['honda_shine', 'honda_activa', 'honda_cbr', 'barricade'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                obstacles.push({
+                    lane: lane,
+                    x: getLaneX(lane),
+                    y: -80,
+                    type: type,
+                    width: 44,
+                    height: type === 'barricade' ? 35 : 70,
+                    speedOffset: type === 'honda_cbr' ? 2 : 0
+                });
+            }
+
+            // Spawn Coins / Powerups
+            if (frameCount % 25 === 0) {
+                const lane = Math.floor(Math.random() * 3);
+                const isPowerup = Math.random() < 0.15;
+                collectibles.push({
+                    lane: lane,
+                    x: getLaneX(lane),
+                    y: -30,
+                    type: isPowerup ? (Math.random() > 0.5 ? 'shield' : 'energy') : 'coin',
+                    size: 20
+                });
+            }
+        }
+
+        // Particle System for Hits/Pickups
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 20,
+                    color: color,
+                    size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        // Draw Player Character (Woman Runner/Commuter/Biker)
+        function drawPlayer() {
+            // Smooth Lane Interpolation
+            player.x += (player.targetX - player.x) * 0.25;
+
+            // Handle Jump Logic
+            if (player.isJumping) {
+                player.yOffset += player.jumpV;
+                player.jumpV += player.gravity;
+                if (player.yOffset >= 0) {
+                    player.yOffset = 0;
+                    player.isJumping = false;
+                }
+            }
+
+            // Handle Slide Logic
+            if (player.isSliding) {
+                player.slideTimer--;
+                if (player.slideTimer <= 0) {
+                    player.isSliding = false;
+                }
+            }
+
+            const currentY = player.y + player.yOffset;
+            const h = player.isSliding ? player.height / 2 : player.height;
+
+            ctx.save();
+            ctx.translate(player.x, currentY);
+
+            // Shield Aura
+            if (player.shield) {
+                ctx.beginPath();
+                ctx.arc(0, 0, 35, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+                ctx.strokeStyle = '#60a5fa';
+                ctx.lineWidth = 3;
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, player.height / 2 - player.yOffset, 18, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fill();
+
+            // Render SVG / Vector Emoji Style Woman
+            let emoji = '🏃‍♀️';
+            if (selectedChar === 'commuter') emoji = '👩‍💼';
+            if (selectedChar === 'biker') emoji = '🏍️';
+
+            ctx.font = player.isSliding ? '28px serif' : '42px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Running Animation Wobble
+            const tilt = Math.sin(frameCount * 0.2) * 0.08;
+            ctx.rotate(tilt);
+            
+            ctx.fillText(emoji, 0, player.isSliding ? 10 : 0);
+
+            ctx.restore();
+        }
+
+        // Draw Honda Bikes and Obstacles
+        function drawObstacle(obs) {
+            ctx.save();
+            ctx.translate(obs.x, obs.y);
+
+            // Bike Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, obs.height / 2 - 5, 20, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fill();
+
+            if (obs.type === 'barricade') {
+                // Road Barrier
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-22, -12, 44, 24);
+                ctx.fillStyle = '#white';
+                ctx.fillRect(-15, -8, 10, 16);
+                ctx.fillRect(5, -8, 10, 16);
+                ctx.strokeStyle = '#991b1b';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-22, -12, 44, 24);
+            } else {
+                // Drawing Honda Motorcycles / Scooters
+                let bikeColor = '#dc2626'; // Honda Red default
+                let label = 'HONDA';
+
+                if (obs.type === 'honda_shine') {
+                    bikeColor = '#2563eb'; // Blue Shine
+                    label = 'SHINE';
+                } else if (obs.type === 'honda_activa') {
+                    bikeColor = '#f59e0b'; // Gold Scooter
+                    label = 'ACTIVA';
+                } else if (obs.type === 'honda_cbr') {
+                    bikeColor = '#dc2626'; // Red Racing CBR
+                    label = 'CBR';
+                }
+
+                // Bike Chassis / Frame
+                ctx.fillStyle = bikeColor;
+                ctx.beginPath();
+                ctx.roundRect(-16, -26, 32, 52, 8);
+                ctx.fill();
+
+                // Engine / Metallic Detailing
+                ctx.fillStyle = '#374151';
+                ctx.fillRect(-12, -8, 24, 20);
+
+                // Windshield / Headlight
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(0, -22, 7, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Wheels
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(-14, -30, 8, 10);
+                ctx.fillRect(6, -30, 8, 10);
+                ctx.fillRect(-14, 20, 8, 10);
+                ctx.fillRect(6, 20, 8, 10);
+
+                // Honda Badge / Text on Bike
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 8px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, 0, 0);
+            }
+
+            ctx.restore();
+        }
+
+        // Draw Collectibles
+        function drawCollectible(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+
+            if (c.type === 'coin') {
+                ctx.fillStyle = '#eab308';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#854d0e';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('₹', 0, 1);
+            } else if (c.type === 'shield') {
+                ctx.font = '20px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🛡️', 0, 0);
+            } else if (c.type === 'energy') {
+                ctx.font = '20px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⚡', 0, 0);
+            }
+
+            ctx.restore();
+        }
+
+        // Environment Background (Road, Lanes, City Scrolling)
+        function drawEnvironment() {
+            // Road background
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Sidewalk Grass
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(0, 0, 15, canvas.height);
+            ctx.fillRect(canvas.width - 15, 0, 15, canvas.height);
+
+            // Lane Markings
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([25, 20]);
+            ctx.lineDashOffset = -frameCount * speed;
+
+            const laneW = canvas.width / 3;
+            ctx.beginPath();
+            ctx.moveTo(laneW, 0);
+            ctx.lineTo(laneW, canvas.height);
+            ctx.moveTo(laneW * 2, 0);
+            ctx.lineTo(laneW * 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+        }
+
+        // Main Loop Update Logic
+        function update() {
+            if (!gameActive) return;
+
+            frameCount++;
+            score += speed * 0.05;
+            speed += 0.001; // Gradual speed increase
+
+            spawnEntities();
+
+            // Update & Move Obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.y += speed + obs.speedOffset;
+
+                // Collision Detection with Player
+                let pHeight = player.isSliding ? player.height / 2 : player.height;
+                let pY = player.y + player.yOffset;
+
+                let dx = Math.abs(player.x - obs.x);
+                let dy = Math.abs(pY - obs.y);
+
+                if (dx < (player.width + obs.width) / 2.2 && dy < (pHeight + obs.height) / 2.2) {
+                    // Check if player jumped OVER barricade
+                    if (obs.type === 'barricade' && player.yOffset < -25) {
+                        // Jumped safely!
+                    } 
+                    // Check if player Slid UNDER high bike handlebars or fast CBR
+                    else if (obs.type === 'honda_cbr' && player.isSliding) {
+                        // Slid safely!
+                    } 
+                    else {
+                        // Hit obstacle
+                        if (player.shield) {
+                            player.shield = false;
+                            createParticles(obs.x, obs.y, '#3b82f6', 15);
+                            obstacles.splice(i, 1);
+                            continue;
+                        } else {
+                            createParticles(obs.x, obs.y, '#ef4444', 20);
+                            lives--;
+                            updateUI();
+                            obstacles.splice(i, 1);
+
+                            if (lives <= 0) {
+                                gameOver();
+                                return;
+                            }
+                            continue;
+                        }
+                    }
+                }
+
+                // Remove offscreen
+                if (obs.y > canvas.height + 100) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Update & Collect Items
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                let c = collectibles[i];
+                c.y += speed;
+
+                let dx = Math.abs(player.x - c.x);
+                let dy = Math.abs((player.y + player.yOffset) - c.y);
+
+                if (dx < 25 && dy < 25) {
+                    if (c.type === 'coin') {
+                        let gain = selectedChar === 'commuter' ? 2 : 1;
+                        coins += gain;
+                        createParticles(c.x, c.y, '#eab308', 8);
+                    } else if (c.type === 'shield') {
+                        player.shield = true;
+                        createParticles(c.x, c.y, '#3b82f6', 12);
+                    } else if (c.type === 'energy') {
+                        score += 50;
+                        createParticles(c.x, c.y, '#10b981', 12);
+                    }
+                    updateUI();
+                    collectibles.splice(i, 1);
+                    continue;
+                }
+
+                if (c.y > canvas.height + 50) {
+                    collectibles.splice(i, 1);
+                }
+            }
+
+            // Particles Update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            updateUI();
+        }
+
+        // Render Loop
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawEnvironment();
+
+            // Render Collectibles
+            collectibles.forEach(drawCollectible);
+
+            // Render Obstacles
+            obstacles.forEach(drawObstacle);
+
+            // Render Player
+            if (gameActive) drawPlayer();
+
+            // Render Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(() => {
+                update();
+                render();
+            });
+        }
+
+        // Initialize Canvas & Start Loop
+        window.onload = () => {
+            resizeCanvas();
+            render();
+        };
+    </script>
+</body>
+</html>
+
+```
